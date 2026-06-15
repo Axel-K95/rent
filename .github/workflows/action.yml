@@ -1,4 +1,4 @@
-name: CI - Build and Push Docker Image
+name: CI/CD - Build, Push and Deploy
 
 on:
   push:
@@ -50,3 +50,18 @@ jobs:
         run: |
           docker tag myservice:latest ${{ secrets.DOCKERHUB_USERNAME }}/myservice:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/myservice:latest
+
+  deploy:
+    runs-on: self-hosted
+    needs: build-and-test
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/myservice
